@@ -1,0 +1,26 @@
+// return all records
+GET /person
+
+// return a specific record
+GET /person/{id}
+
+// create a new record
+POST /person
+
+// update an existing record
+PUT /person/{id}
+
+// delete an existing record
+DELETE /person/{id}
+
+
+
+To run PHP server 
+php -S 127.0.0.1:8000 -t public
+
+
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=api_example
+DB_USERNAME=api_user
+DB_PASSWORD=api_password
