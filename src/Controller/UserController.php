@@ -43,6 +43,12 @@ class UserController {
             echo json_encode(['error' => 'Missing required fields']);
             return;
         }
+
+        // Check if user already exists
+        if ($this->userGateway->findUserByEmailOrUsername($input['email']) || $this->userGateway->findUserByEmailOrUsername($input['username'])) {
+            echo json_encode(['error' => 'User already exists']);
+            return;
+        }
         
         // Hash the password and save the user using UserGateway
         $hashedPassword = password_hash($input['password'], PASSWORD_BCRYPT);
@@ -80,15 +86,17 @@ class UserController {
     //     }
     // }
 
-    // Handle user login
-    public function loginUser() {
-        $usernameOrEmail = $_POST['usernameOrEmail'];
-        $password = $_POST['password'];
+    private function loginUser() {
+        $input = (array) json_decode(file_get_contents('php://input'), true);
 
-        // Fetch user by email or username
-        $user = $this->userGateway->findUserByEmailOrUsername($usernameOrEmail);
+        if (!isset($input['usernameOrEmail'], $input['password'])) {
+            echo json_encode(['error' => 'Missing required fields']);
+            return;
+        }
 
-        if ($user && password_verify($password, $user['password'])) {
+        $user = $this->userGateway->findUserByEmailOrUsername($input['usernameOrEmail']);
+    
+        if ($user && password_verify($input['password'], $user['password'])) {
             // Start session or generate token
             session_start();
             $_SESSION['user_id'] = $user['id'];
@@ -97,6 +105,24 @@ class UserController {
             echo json_encode(['error' => 'Invalid credentials']);
         }
     }
+
+    // Handle user login
+    // public function loginUser() {
+    //     $usernameOrEmail = $_POST['usernameOrEmail'];
+    //     $password = $_POST['password'];
+
+    //     // Fetch user by email or username
+    //     $user = $this->userGateway->findUserByEmailOrUsername($usernameOrEmail);
+
+    //     if ($user && password_verify($password, $user['password'])) {
+    //         // Start session or generate token
+    //         session_start();
+    //         $_SESSION['user_id'] = $user['id'];
+    //         echo json_encode(['success' => 'Login successful', 'user' => $user]);
+    //     } else {
+    //         echo json_encode(['error' => 'Invalid credentials']);
+    //     }
+    // }
 
     private function invalidRequest() {
         header("HTTP/1.1 405 Method Not Allowed");
