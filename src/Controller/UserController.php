@@ -86,6 +86,7 @@ class UserController {
     //     }
     // }
 
+    // User login with JWT token
     private function loginUser() {
         $input = (array) json_decode(file_get_contents('php://input'), true);
 
@@ -97,14 +98,42 @@ class UserController {
         $user = $this->userGateway->findUserByEmailOrUsername($input['usernameOrEmail']);
     
         if ($user && password_verify($input['password'], $user['password'])) {
-            // Start session or generate token
-            session_start();
-            $_SESSION['user_id'] = $user['id'];
-            echo json_encode(['success' => 'Login successful', 'user' => $user]);
+            // Credentials are correct, generate JWT token
+            $jwt = JWTUtil::generateToken([
+                'id' => $user['id'],
+                'email' => $user['email'],
+                'username' => $user['username']
+            ]);
+
+            // Send JWT token in an HttpOnly cookie
+            setcookie('auth_token', $jwt, time() + 3600, "/", "", false, true); // httpOnly cookie
+            return json_encode(['message' => 'Login successful']);
         } else {
-            echo json_encode(['error' => 'Invalid credentials']);
+            http_response_code(401);
+            return json_encode(['message' => 'Invalid credentials']);
         }
     }
+
+    // User login with session_start
+    // private function loginUser() {
+    //     $input = (array) json_decode(file_get_contents('php://input'), true);
+
+    //     if (!isset($input['usernameOrEmail'], $input['password'])) {
+    //         echo json_encode(['error' => 'Missing required fields']);
+    //         return;
+    //     }
+
+    //     $user = $this->userGateway->findUserByEmailOrUsername($input['usernameOrEmail']);
+    
+    //     if ($user && password_verify($input['password'], $user['password'])) {
+    //         // Start session or generate token
+    //         session_start();
+    //         $_SESSION['user_id'] = $user['id'];
+    //         echo json_encode(['success' => 'Login successful', 'user' => $user]);
+    //     } else {
+    //         echo json_encode(['error' => 'Invalid credentials']);
+    //     }
+    // }
 
     // Handle user login
     // public function loginUser() {
@@ -123,6 +152,21 @@ class UserController {
     //         echo json_encode(['error' => 'Invalid credentials']);
     //     }
     // }
+
+    public function authenticate($request) {
+        // Get the JWT token from the cookie
+        $token = $_COOKIE['auth_token'] ?? null;
+
+        if ($token) {
+            $userData = JWTUtil::validateToken($token);
+            if ($userData) {
+                return json_encode(['message' => 'Authenticated', 'user' => $userData]);
+            }
+        }
+
+        http_response_code(401);
+        return json_encode(['message' => 'Unauthorized']);
+    }
 
     private function invalidRequest() {
         header("HTTP/1.1 405 Method Not Allowed");

@@ -24,3 +24,8 @@ DB_PORT=3306
 DB_DATABASE=api_example
 DB_USERNAME=api_user
 DB_PASSWORD=api_password
+
+
+
+composer require vlucas/phpdotenv
+composer require firebase/php-jwt
