@@ -19,6 +19,9 @@ class UserController {
 
     public function processRequest() {
         switch ($this->requestMethod) {
+            case 'GET':
+                $this->authenticate();
+                break;
             case 'POST':
                 $action = $_GET['action'] ?? '';  // Fetch action from query params
                 if ($action === 'register') {
@@ -153,7 +156,7 @@ class UserController {
     //     }
     // }
 
-    public function authenticate($request) {
+    private function authenticate($request) {
         // Get the JWT token from the cookie
         $token = $_COOKIE['auth_token'] ?? null;
 
