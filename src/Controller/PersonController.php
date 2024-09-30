@@ -2,6 +2,7 @@
 namespace Src\Controller;
 
 use Src\TableGateways\PersonGateway;
+use Src\Utils\JWTUtil;
 
 class PersonController {
 
@@ -22,6 +23,7 @@ class PersonController {
 
     public function processRequest()
     {
+        // if(JWTUtil::isLoggedIn()){
         switch ($this->requestMethod) {
             case 'GET':
                 if ($this->userId) {
@@ -47,6 +49,10 @@ class PersonController {
         if ($response['body']) {
             echo $response['body'];
         }
+        // } else {
+        //     http_response_code(401);
+        //     return json_encode(['message' => 'Unauthorized']);
+        // }
     }
 
     private function getAllUsers()

@@ -26,6 +26,12 @@ DB_USERNAME=api_user
 DB_PASSWORD=api_password
 
 
+I removed from FE http://127.0.0.1:8000/user?action=register
+To get register we did 
+$action = $_GET['action'] ?? '';  // Fetch action from query params
+
+Now we are accessing this API by http://127.0.0.1:8000/user/register
+
 
 composer require vlucas/phpdotenv
 composer require firebase/php-jwt
