@@ -108,10 +108,12 @@ class UserController {
                 'domain' => '', // Use the current domain
                 'secure' => false, // Set to true when using HTTPS
                 'httponly' => true, // Prevent JavaScript access
-                'samesite' => 'Lax', // Set SameSite to Lax
+                'samesite' => 'Strict', // Set SameSite to Lax, Strict
             ]);
+            // setcookie('Pasa', 'Test_token', time() + 3600, "/", "", false, true);
 
-            echo json_encode(['success' => 'Login successful']);
+
+            echo json_encode(['success' => 'Login successful', 'user' => $user]);
             // return json_encode(['message' => 'Login successful']);
         } else {
             http_response_code(401);
