@@ -24,21 +24,25 @@ class UserController {
         switch ($this->requestMethod) {
             case 'GET':
                 if ($this->action === 'auth-check'){
-                    $this->authenticate();
+                    $response = $this->authenticate();
                 } 
                 break;
             case 'POST':
                 if ($this->action === 'register') {
-                    $this->registerUser();
+                    $response = $this->registerUser();
                 } elseif ($this->action === 'login') {
-                    $this->loginUser();
+                    $response = $this->loginUser();
                 } else {
-                    $this->invalidRequest();
+                    $response = $this->notFoundResponse();
                 }
                 break;
             default:
-                $this->invalidRequest();
+                $response = $this->notFoundResponse();
                 break;
+        }
+        header($response['status_code_header']);
+        if ($response['body']) {
+            echo $response['body'];
         }
     }
 
@@ -67,9 +71,11 @@ class UserController {
         $result = $this->userGateway->insertUser($input['email'], $input['username'], $hashedPassword, $input['firstname'], $input['lastname']);
         
         if ($result) {
-            echo json_encode(['success' => 'User registered successfully']);
+            $response['status_code_header'] = 'HTTP/1.1 200 OK';
+            $response['body'] = json_encode(['message' => 'User registered successfully']);
+            return $response;
         } else {
-            echo json_encode(['error' => 'User registration failed']);
+            return $this->unprocessableEntityResponse();
         }
     }
 
@@ -104,12 +110,13 @@ class UserController {
             $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
             setcookie('auth_token', $jwt, time() + 3600, "/", "", $isSecure, true);// httpOnly cookie
 
-            echo json_encode(['user' => $user, 'userToken' => $jwt]);
-            // return json_encode(['message' => 'Login successful']);
+            $response['status_code_header'] = 'HTTP/1.1 200 OK';
+            $response['body'] = json_encode(['user' => $user, 'userToken' => $jwt]);
+            return $response;
         } else {
-            http_response_code(401);
-            echo json_encode(['error' => 'Invalid credentials']);
-            // return json_encode(['message' => 'Invalid credentials']);
+            $response['status_code_header'] = 'HTTP/1.1 401 Unauthorized';
+            $response['body'] = json_encode(['message' => 'Invalid credentials']);
+            return $response;
         }
     }
 
@@ -128,9 +135,13 @@ class UserController {
         return json_encode(['message' => 'Unauthorized']);
     }
 
-    private function invalidRequest() {
-        header("HTTP/1.1 405 Method Not Allowed");
-        echo json_encode(['error' => 'Invalid request method']);
+    private function unprocessableEntityResponse()
+    {
+        $response['status_code_header'] = 'HTTP/1.1 422 Unprocessable Entity';
+        $response['body'] = json_encode([
+            'error' => 'Invalid input'
+        ]);
+        return $response;
     }
 
     //* ILI OVO - PROVERITI
