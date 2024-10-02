@@ -96,24 +96,15 @@ class UserController {
             $jwt = JWTUtil::generateToken([
                 'id' => $user['id'],
                 'email' => $user['email'],
-                'username' => $user['username']
+                'username' => $user['username'],
+                //'exp' => time() + 300 //* Does nothing as generateToken function sets 'exp'
             ]);
 
             // Send JWT token in an HttpOnly cookie
             $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
-            // setcookie('auth_token', $jwt, time() + 3600, "/", "", $isSecure, true);// httpOnly cookie
-            setcookie('auth_token', $jwt, [
-                'expires' => time() + 3600, // 1 hour from now
-                'path' => '/', // Accessible throughout the site
-                'domain' => '', // Use the current domain
-                'secure' => false, // Set to true when using HTTPS
-                'httponly' => true, // Prevent JavaScript access
-                'samesite' => 'Strict', // Set SameSite to Lax, Strict
-            ]);
-            // setcookie('Pasa', 'Test_token', time() + 3600, "/", "", false, true);
+            setcookie('auth_token', $jwt, time() + 3600, "/", "", $isSecure, true);// httpOnly cookie
 
-
-            echo json_encode(['success' => 'Login successful', 'user' => $user]);
+            echo json_encode(['user' => $user, 'userToken' => $jwt]);
             // return json_encode(['message' => 'Login successful']);
         } else {
             http_response_code(401);

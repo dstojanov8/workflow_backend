@@ -9,21 +9,26 @@ class PersonController {
     private $db;
     private $requestMethod;
     private $userId;
+    private $userData; // Decoded token data
 
     private $personGateway;
 
-    public function __construct($db, $requestMethod, $userId)
+    public function __construct($db, $requestMethod, $userId, $userData)
     {
         $this->db = $db;
         $this->requestMethod = $requestMethod;
         $this->userId = $userId;
+        $this->userData = $userData; // Save the decoded user data
 
         $this->personGateway = new PersonGateway($db);
     }
 
     public function processRequest()
     {
-        // if(JWTUtil::isLoggedIn()){
+        if (!$this->userData) {
+            return $this->unauthorizedResponse();
+        }
+
         switch ($this->requestMethod) {
             case 'GET':
                 if ($this->userId) {
@@ -49,10 +54,13 @@ class PersonController {
         if ($response['body']) {
             echo $response['body'];
         }
-        // } else {
-        //     http_response_code(401);
-        //     return json_encode(['message' => 'Unauthorized']);
-        // }
+    }
+
+    private function unauthorizedResponse()
+    {
+        $response['status_code_header'] = 'HTTP/1.1 401 Unauthorized';
+        $response['body'] = json_encode(['message' => 'Unauthorized']);
+        return $response;
     }
 
     private function getAllUsers()

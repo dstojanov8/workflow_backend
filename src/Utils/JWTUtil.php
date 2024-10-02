@@ -29,20 +29,4 @@ class JWTUtil {
             return false; // token is invalid
         }
     }
-
-    public static function isLoggedIn() {
-        // Check if the auth_token cookie is set
-        if (isset($_COOKIE['auth_token'])) {
-            $authToken = $_COOKIE['auth_token'];
-            
-            // Validate the token (you may need to use a JWT library)
-            $decoded = JWTUtil::validateToken($authToken); // Function to decode and validate JWT
-    
-            // If the token is valid, return true, else return false
-            if ($decoded) {
-                return true; // User is logged in
-            }
-        }
-        return false; // User is not logged in
-    }
 }
