@@ -11,7 +11,7 @@ class JWTUtil {
 
     public static function generateToken($userData) {
         $issuedAt = time();
-        $expirationTime = $issuedAt + 3600;  // jwt valid for 1 hour
+        $expirationTime = $issuedAt + 3600;  // 120 = jwt vallid for 2 minutes | 3600 = jwt valid for 1 hour
         $payload = [
             'iat' => $issuedAt,
             'exp' => $expirationTime,
