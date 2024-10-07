@@ -2,40 +2,56 @@
 namespace Src\Controller;
 
 use Src\TableGateways\UserGateway;
+use Src\Utils\JWTUtil;
 
 class UserController {
 
     private $db;
     private $requestMethod;
+    private $action;
 
     private $userGateway;
 
-    public function __construct($db, $requestMethod) {
+    public function __construct($db, $requestMethod, $action) {
         $this->db = $db;
         $this->requestMethod = $requestMethod;
+        $this->action = $action;
 
         $this->userGateway = new UserGateway($db);
     }
 
     public function processRequest() {
         switch ($this->requestMethod) {
+            case 'GET':
+                if ($this->action === 'auth-check'){
+                    $response = $this->authenticate();
+                } 
+                break;
             case 'POST':
-                $action = $_GET['action'] ?? '';  // Fetch action from query params
-                if ($action === 'register') {
-                    $this->registerUser();
-                } elseif ($action === 'login') {
-                    $this->loginUser();
+                if ($this->action === 'register') {
+                    $response = $this->registerUser();
+                } elseif ($this->action === 'login') {
+                    $response = $this->loginUser();
                 } else {
-                    $this->invalidRequest();
+                    $response = $this->notFoundResponse();
                 }
                 break;
             default:
-                $this->invalidRequest();
+                $response = $this->notFoundResponse();
                 break;
+        }
+        header($response['status_code_header']);
+        if ($response['body']) {
+            echo $response['body'];
         }
     }
 
     private function registerUser() {
+        // $email = $_POST['email'];
+        // $username = $_POST['username'];
+        // $password = $_POST['password'];
+        // $firstname = $_POST['firstname'];
+        // $lastname = $_POST['lastname'];
         $input = (array) json_decode(file_get_contents('php://input'), TRUE);
         
         // Validate input
@@ -55,38 +71,18 @@ class UserController {
         $result = $this->userGateway->insertUser($input['email'], $input['username'], $hashedPassword, $input['firstname'], $input['lastname']);
         
         if ($result) {
-            echo json_encode(['success' => 'User registered successfully']);
+            $response['status_code_header'] = 'HTTP/1.1 200 OK';
+            $response['body'] = json_encode(['message' => 'User registered successfully']);
+            return $response;
         } else {
-            echo json_encode(['error' => 'User registration failed']);
+            return $this->unprocessableEntityResponse();
         }
     }
 
-    // Register a new user
-    // public function registerUser() {
-    //     $email = $_POST['email'];
-    //     $username = $_POST['username'];
-    //     $password = $_POST['password'];
-    //     $firstname = $_POST['firstname'];
-    //     $lastname = $_POST['lastname'];
-
-    //     // Check if user already exists
-    //     if ($this->userGateway->findUserByEmailOrUsername($email) || $this->userGateway->findUserByEmailOrUsername($username)) {
-    //         echo json_encode(['error' => 'User already exists']);
-    //         return;
-    //     }
-
-    //     // Hash password
-    //     $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-
-    //     // Insert user into the database
-    //     if ($this->userGateway->insertUser($email, $username, $hashedPassword, $firstname, $lastname)) {
-    //         echo json_encode(['success' => 'User registered successfully']);
-    //     } else {
-    //         echo json_encode(['error' => 'Failed to register user']);
-    //     }
-    // }
-
+    // User login with JWT token
     private function loginUser() {
+        // $usernameOrEmail = $_POST['usernameOrEmail'];
+        // $password = $_POST['password'];
         $input = (array) json_decode(file_get_contents('php://input'), true);
 
         if (!isset($input['usernameOrEmail'], $input['password'])) {
@@ -97,36 +93,55 @@ class UserController {
         $user = $this->userGateway->findUserByEmailOrUsername($input['usernameOrEmail']);
     
         if ($user && password_verify($input['password'], $user['password'])) {
-            // Start session or generate token
-            session_start();
-            $_SESSION['user_id'] = $user['id'];
-            echo json_encode(['success' => 'Login successful', 'user' => $user]);
+            //* Before we did: Session start
+            // session_start();
+            // $_SESSION['user_id'] = $user['id'];
+            // echo json_encode(['success' => 'Login successful', 'user' => $user]);
+
+            //* Here we generate JWT token
+            $jwt = JWTUtil::generateToken([
+                'id' => $user['id'],
+                'email' => $user['email'],
+                'username' => $user['username'],
+                //'exp' => time() + 300 //* Does nothing as generateToken function sets 'exp'
+            ]);
+
+            // Send JWT token in an HttpOnly cookie
+            $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+            setcookie('auth_token', $jwt, time() + 3600, "/", "", $isSecure, true);// httpOnly cookie
+
+            $response['status_code_header'] = 'HTTP/1.1 200 OK';
+            $response['body'] = json_encode(['user' => $user, 'userToken' => $jwt]);
+            return $response;
         } else {
-            echo json_encode(['error' => 'Invalid credentials']);
+            $response['status_code_header'] = 'HTTP/1.1 401 Unauthorized';
+            $response['body'] = json_encode(['message' => 'Invalid credentials']);
+            return $response;
         }
     }
 
-    // Handle user login
-    // public function loginUser() {
-    //     $usernameOrEmail = $_POST['usernameOrEmail'];
-    //     $password = $_POST['password'];
+    private function authenticate() {
+        // Get the JWT token from the cookie
+        $token = $_COOKIE['auth_token'] ?? null;
 
-    //     // Fetch user by email or username
-    //     $user = $this->userGateway->findUserByEmailOrUsername($usernameOrEmail);
+        if ($token) {
+            $userData = JWTUtil::validateToken($token);
+            if ($userData) {
+                return json_encode(['message' => 'Authenticated', 'user' => $userData]);
+            }
+        }
 
-    //     if ($user && password_verify($password, $user['password'])) {
-    //         // Start session or generate token
-    //         session_start();
-    //         $_SESSION['user_id'] = $user['id'];
-    //         echo json_encode(['success' => 'Login successful', 'user' => $user]);
-    //     } else {
-    //         echo json_encode(['error' => 'Invalid credentials']);
-    //     }
-    // }
+        http_response_code(401);
+        return json_encode(['message' => 'Unauthorized']);
+    }
 
-    private function invalidRequest() {
-        header("HTTP/1.1 405 Method Not Allowed");
-        echo json_encode(['error' => 'Invalid request method']);
+    private function unprocessableEntityResponse()
+    {
+        $response['status_code_header'] = 'HTTP/1.1 422 Unprocessable Entity';
+        $response['body'] = json_encode([
+            'error' => 'Invalid input'
+        ]);
+        return $response;
     }
 
     //* ILI OVO - PROVERITI
@@ -136,5 +151,4 @@ class UserController {
         $response['body'] = null;
         return $response;
     }
-
 }

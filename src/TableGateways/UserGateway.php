@@ -19,6 +19,6 @@ class UserGateway {
     public function findUserByEmailOrUsername($emailOrUsername) {
         $stmt = $this->db->prepare('SELECT * FROM account WHERE email = ? OR username = ?');
         $stmt->execute([$emailOrUsername, $emailOrUsername]);
-        return $stmt->fetch();
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 }
