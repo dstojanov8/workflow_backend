@@ -15,7 +15,7 @@ class UserController {
     public function __construct($db, $requestMethod, $action) {
         $this->db = $db;
         $this->requestMethod = $requestMethod;
-        $this->action = $action;
+        $this->action = $action; //* Also used as userId in PUT updateUser
 
         $this->userGateway = new UserGateway($db);
     }
@@ -35,6 +35,9 @@ class UserController {
                 } else {
                     $response = $this->notFoundResponse();
                 }
+                break;
+            case 'PUT':
+                $response = $this->updateUser($this->action);
                 break;
             default:
                 $response = $this->notFoundResponse();
@@ -77,6 +80,32 @@ class UserController {
         } else {
             return $this->unprocessableEntityResponse();
         }
+    }
+
+    private function updateUser($id) 
+    {
+        $result = $this->userGateway->findUser($id);
+        if (! $result) {
+            return $this->notFoundResponse();
+        }
+        $input = (array) json_decode(file_get_contents('php://input'), TRUE);
+        // Validate input
+        if (!isset($input['firstname'], $input['lastname'], $input['username'], $input['email'])) {
+            return $this->unprocessableEntityResponse();
+        }
+        $this->userGateway->updateUser($id, $input);
+        // try{
+        //     $this->userGateway->updateUser($id, $input);
+        // } catch (\PDOException $e) {
+        //     $response['status_code_header'] = 'HTTP/1.1 300';
+        //     $response['body'] = json_encode(['message' => $e->getMessage()]);
+        //     return $response;
+        // }
+        //* Return updated user
+        $userData = $this->userGateway->findUser($id);
+        $response['status_code_header'] = 'HTTP/1.1 200 OK';
+        $response['body'] = json_encode(['message' => 'User registered successfully', 'user' => $userData]);
+        return $response;
     }
 
     // User login with JWT token

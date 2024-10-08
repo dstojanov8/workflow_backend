@@ -21,4 +21,51 @@ class UserGateway {
         $stmt->execute([$emailOrUsername, $emailOrUsername]);
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
+
+    public function findUser($id)
+    {
+        $statement = "
+            SELECT
+                id, firstname, lastname, email, username
+            FROM
+                account
+            WHERE id = ?;
+        ";
+
+        try {
+            $statement = $this->db->prepare($statement);
+            $statement->execute(array($id));
+            $result = $statement->fetch(\PDO::FETCH_ASSOC);
+            return $result;
+        } catch (\PDOException $e) {
+            exit($e->getMessage());
+        }
+    }
+
+    public function updateUser($id, Array $input)
+    {
+        $statement = "
+            UPDATE account
+            SET 
+                email = :email,
+                firstname = :firstname,
+                lastname = :lastname,
+                username = :username
+            WHERE id = :id;
+        ";
+
+        try {
+            $statement = $this->db->prepare($statement);
+            $statement->execute(array(
+                'id' => (int) $id,
+                'firstname' => $input['firstname'],
+                'lastname' => $input['lastname'],
+                'username' => $input['username'],
+                'email' => $input['email'],
+            ));
+            return $statement->rowCount();
+        } catch (\PDOException $e) {
+            exit($e->getMessage());
+        }
+    }
 }
