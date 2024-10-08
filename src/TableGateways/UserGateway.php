@@ -63,9 +63,13 @@ class UserGateway {
                 'username' => $input['username'],
                 'email' => $input['email'],
             ));
-            return $statement->rowCount();
+            return ['success' => true, 'rowCount' => $statement->rowCount()];
         } catch (\PDOException $e) {
-            exit($e->getMessage());
+            // Check for duplicate entry error (SQLSTATE 23000) with a specific message
+            if ($e->getCode() == 23000 && strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                return ['success' => false, 'error' => 'Duplicate email entry'];
+            }
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 }

@@ -93,18 +93,23 @@ class UserController {
         if (!isset($input['firstname'], $input['lastname'], $input['username'], $input['email'])) {
             return $this->unprocessableEntityResponse();
         }
-        $this->userGateway->updateUser($id, $input);
-        // try{
-        //     $this->userGateway->updateUser($id, $input);
-        // } catch (\PDOException $e) {
-        //     $response['status_code_header'] = 'HTTP/1.1 300';
-        //     $response['body'] = json_encode(['message' => $e->getMessage()]);
-        //     return $response;
-        // }
+        $updateResult = $this->userGateway->updateUser($id, $input);
+        //* In case email is already in use
+        if (!$updateResult['success']) {
+            if ($updateResult['error'] === 'Duplicate email entry') {
+                $response['status_code_header'] = 'HTTP/1.1 409 Conflict';
+                $response['body'] = json_encode(['message' => 'Email already exists.']);
+            } else {
+                $response['status_code_header'] = 'HTTP/1.1 500 Internal Server Error';
+                $response['body'] = json_encode(['message' => 'An error occurred while updating the user.']);
+            }
+            return $response;
+        }
+
         //* Return updated user
         $userData = $this->userGateway->findUser($id);
         $response['status_code_header'] = 'HTTP/1.1 200 OK';
-        $response['body'] = json_encode(['message' => 'User registered successfully', 'user' => $userData]);
+        $response['body'] = json_encode(['message' => 'User updated successfully', 'user' => $userData]);
         return $response;
     }
 
