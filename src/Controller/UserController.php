@@ -59,14 +59,20 @@ class UserController {
         
         // Validate input
         if (!isset($input['email'], $input['password'], $input['username'])) {
-            echo json_encode(['error' => 'Missing required fields']);
-            return;
+            return $this->unprocessableEntityResponse();
         }
 
         // Check if user already exists
-        if ($this->userGateway->findUserByEmailOrUsername($input['email']) || $this->userGateway->findUserByEmailOrUsername($input['username'])) {
-            echo json_encode(['error' => 'User already exists']);
-            return;
+        if ($this->userGateway->findUserByEmailOrUsername($input['email'])) {
+            $response['status_code_header'] = 'HTTP/1.1 409 Conflict';
+            $response['body'] = json_encode(['message' => 'Email already in use.']);
+            return $response;
+        }
+        // Check if user already exists
+        if ($this->userGateway->findUserByEmailOrUsername($input['username'])) {
+            $response['status_code_header'] = 'HTTP/1.1 409 Conflict';
+            $response['body'] = json_encode(['message' => 'Username already in use.']);
+            return $response;
         }
         
         // Hash the password and save the user using UserGateway
@@ -120,8 +126,7 @@ class UserController {
         $input = (array) json_decode(file_get_contents('php://input'), true);
 
         if (!isset($input['usernameOrEmail'], $input['password'])) {
-            echo json_encode(['error' => 'Missing required fields']);
-            return;
+            return $this->unprocessableEntityResponse();
         }
 
         $user = $this->userGateway->findUserByEmailOrUsername($input['usernameOrEmail']);
@@ -173,7 +178,7 @@ class UserController {
     {
         $response['status_code_header'] = 'HTTP/1.1 422 Unprocessable Entity';
         $response['body'] = json_encode([
-            'error' => 'Invalid input'
+            'message' => 'Invalid input. Missing required fields.'
         ]);
         return $response;
     }

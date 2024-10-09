@@ -124,10 +124,10 @@ class PersonController {
 
     private function validatePerson($input)
     {
-        if (! isset($input['firstname'])) {
+        if (! isset($input['firstname']) || trim($input['firstname']) == '') {
             return false;
         }
-        if (! isset($input['lastname'])) {
+        if (! isset($input['lastname']) || trim($input['lastname']) == '') {
             return false;
         }
         return true;
@@ -137,7 +137,7 @@ class PersonController {
     {
         $response['status_code_header'] = 'HTTP/1.1 422 Unprocessable Entity';
         $response['body'] = json_encode([
-            'error' => 'Invalid input'
+            'message' => 'Invalid input. Missing required fields.'
         ]);
         return $response;
     }
