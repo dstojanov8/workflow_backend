@@ -13,8 +13,6 @@ PUT /person/{id}
 // delete an existing record
 DELETE /person/{id}
 
-
-
 To run PHP server 
 php -S 127.0.0.1:8000 -t public
 
@@ -32,6 +30,9 @@ $action = $_GET['action'] ?? '';  // Fetch action from query params
 
 Now we are accessing this API by http://127.0.0.1:8000/user/register
 
-
+You will possiby need to run these two commands
 composer require vlucas/phpdotenv
 composer require firebase/php-jwt
+
+There will be a SQL script to initialize the database and to create tables.
+-> Check db_ini.sql

@@ -15,7 +15,7 @@ class UserController {
     public function __construct($db, $requestMethod, $action) {
         $this->db = $db;
         $this->requestMethod = $requestMethod;
-        $this->action = $action;
+        $this->action = $action; //* Also used as userId in PUT updateUser
 
         $this->userGateway = new UserGateway($db);
     }
@@ -35,6 +35,9 @@ class UserController {
                 } else {
                     $response = $this->notFoundResponse();
                 }
+                break;
+            case 'PUT':
+                $response = $this->updateUser($this->action);
                 break;
             default:
                 $response = $this->notFoundResponse();
@@ -56,14 +59,20 @@ class UserController {
         
         // Validate input
         if (!isset($input['email'], $input['password'], $input['username'])) {
-            echo json_encode(['error' => 'Missing required fields']);
-            return;
+            return $this->unprocessableEntityResponse();
         }
 
         // Check if user already exists
-        if ($this->userGateway->findUserByEmailOrUsername($input['email']) || $this->userGateway->findUserByEmailOrUsername($input['username'])) {
-            echo json_encode(['error' => 'User already exists']);
-            return;
+        if ($this->userGateway->findUserByEmailOrUsername($input['email'])) {
+            $response['status_code_header'] = 'HTTP/1.1 409 Conflict';
+            $response['body'] = json_encode(['message' => 'Email already in use.']);
+            return $response;
+        }
+        // Check if user already exists
+        if ($this->userGateway->findUserByEmailOrUsername($input['username'])) {
+            $response['status_code_header'] = 'HTTP/1.1 409 Conflict';
+            $response['body'] = json_encode(['message' => 'Username already in use.']);
+            return $response;
         }
         
         // Hash the password and save the user using UserGateway
@@ -79,6 +88,37 @@ class UserController {
         }
     }
 
+    private function updateUser($id) 
+    {
+        $result = $this->userGateway->findUser($id);
+        if (! $result) {
+            return $this->notFoundResponse();
+        }
+        $input = (array) json_decode(file_get_contents('php://input'), TRUE);
+        // Validate input
+        if (!isset($input['firstname'], $input['lastname'], $input['username'], $input['email'])) {
+            return $this->unprocessableEntityResponse();
+        }
+        $updateResult = $this->userGateway->updateUser($id, $input);
+        //* In case email is already in use
+        if (!$updateResult['success']) {
+            if ($updateResult['error'] === 'Duplicate email entry') {
+                $response['status_code_header'] = 'HTTP/1.1 409 Conflict';
+                $response['body'] = json_encode(['message' => 'Email already exists.']);
+            } else {
+                $response['status_code_header'] = 'HTTP/1.1 500 Internal Server Error';
+                $response['body'] = json_encode(['message' => 'An error occurred while updating the user.']);
+            }
+            return $response;
+        }
+
+        //* Return updated user
+        $userData = $this->userGateway->findUser($id);
+        $response['status_code_header'] = 'HTTP/1.1 200 OK';
+        $response['body'] = json_encode(['message' => 'User updated successfully', 'user' => $userData]);
+        return $response;
+    }
+
     // User login with JWT token
     private function loginUser() {
         // $usernameOrEmail = $_POST['usernameOrEmail'];
@@ -86,8 +126,7 @@ class UserController {
         $input = (array) json_decode(file_get_contents('php://input'), true);
 
         if (!isset($input['usernameOrEmail'], $input['password'])) {
-            echo json_encode(['error' => 'Missing required fields']);
-            return;
+            return $this->unprocessableEntityResponse();
         }
 
         $user = $this->userGateway->findUserByEmailOrUsername($input['usernameOrEmail']);
@@ -139,7 +178,7 @@ class UserController {
     {
         $response['status_code_header'] = 'HTTP/1.1 422 Unprocessable Entity';
         $response['body'] = json_encode([
-            'error' => 'Invalid input'
+            'message' => 'Invalid input. Missing required fields.'
         ]);
         return $response;
     }
