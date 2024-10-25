@@ -1,3 +1,49 @@
+# Docker commands that I use:
+
+To start conainers (data will be saved in volume):
+`docker-compose up`
+
+To list active conainers:
+`docker ps`
+
+After listing active containers to enter the container run:
+`docker exec -it <container_name> sh` to enter container shell
+`docker exec -it <container_name> ...` after which we car run commands like ls
+`docker exec -it <container_name> ls /var/www/html/vendor`
+
+To start and build containers:
+`docker-compose up --build`
+
+To remove containers and volumes:
+`docker-compose down -v`
+
+To remove volumes (don't think I will be using this):
+`docker volume rm <your-project-name>_db_data`
+
+## DB related commands:
+
+To enter db container and execute mysql command (`SHOW TABLES;`):
+`docker-compose exec db mysql -u myuser -pmypassword myapp_db`
+
+To enter db and list sql scipt placed in entry point:
+`docker-compose exec db ls /docker-entrypoint-initdb.d/`
+
+#### Enter the (MySQL) container:
+
+`docker-compose exec db bash`
+
+#### Access the MySQL CLI:
+
+`mysql -u myuser -pmypassword myapp_db`
+
+#### Manually run the SQL script:
+
+`SOURCE /docker-entrypoint-initdb.d/db_ini.sql;`
+
+When entering the container using `docker-compose exec ...` is the same as `docker exec ...`
+the difference is that for the first we write the container name as it is in docker-compose file
+and for the second we have to check container name with `docker ps` command
+
 // return all records
 GET /person
 
@@ -13,9 +59,18 @@ PUT /person/{id}
 // delete an existing record
 DELETE /person/{id}
 
-To run PHP server 
+To run PHP server
 php -S 127.0.0.1:8000 -t public
 
+#### New db credentials
+
+DB_HOST=db
+DB_PORT=3306
+DB_DATABASE=myapp_db
+DB_USERNAME=myuser
+DB_PASSWORD=mypassword
+
+#### Old db credentials
 
 DB_HOST=localhost
 DB_PORT=3306
@@ -23,10 +78,9 @@ DB_DATABASE=api_example
 DB_USERNAME=api_user
 DB_PASSWORD=api_password
 
-
 I removed from FE http://127.0.0.1:8000/user?action=register
-To get register we did 
-$action = $_GET['action'] ?? '';  // Fetch action from query params
+To get register we did
+$action = $\_GET['action'] ?? ''; // Fetch action from query params
 
 Now we are accessing this API by http://127.0.0.1:8000/user/register
 

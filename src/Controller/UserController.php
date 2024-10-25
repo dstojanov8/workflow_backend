@@ -25,6 +25,9 @@ class UserController {
             case 'GET':
                 if ($this->action === 'auth-check'){
                     $response = $this->authenticate();
+                } else {
+                    // TODO: Remove else after testing Docker
+                    $response = $this->getAllUsers();
                 } 
                 break;
             case 'POST':
@@ -47,6 +50,18 @@ class UserController {
         if ($response['body']) {
             echo $response['body'];
         }
+    }
+
+    // TODO: Remove after testing Docker
+    private function getAllUsers()
+    {
+        $result = $this->userGateway->findAll();
+        // if (! $result) {
+        //     return $this->notFoundResponse();
+        // }
+        $response['status_code_header'] = 'HTTP/1.1 200 OK';
+        $response['body'] = json_encode($result);
+        return $response;
     }
 
     private function registerUser() {

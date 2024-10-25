@@ -8,15 +8,9 @@ header("Access-Control-Allow-Origin: http://localhost:5173");
 header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: OPTIONS,GET,POST,PUT,DELETE");
-header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    // Return OK response for preflight requests
-    header("Access-Control-Allow-Origin: http://localhost:5173");
-    header("Access-Control-Allow-Credentials: true");
-    header("Access-Control-Allow-Methods: OPTIONS,GET,POST,PUT,DELETE");
-    header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
     header("HTTP/1.1 200 OK");
     exit();
 }
@@ -28,7 +22,7 @@ $uri = explode( '/', $uri );
 if ($uri[1] === 'user') {
     // Handle user registration or login (no user ID needed here)
     $requestMethod = $_SERVER["REQUEST_METHOD"];
-    $action = $uri[2];
+    $action = isset($uri[2]) ? $uri[2] : null;
     // Pass the request method to the UserController
     $controller = new UserController($dbConnection, $requestMethod, $action);
     $controller->processRequest();

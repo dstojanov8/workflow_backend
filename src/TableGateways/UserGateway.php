@@ -22,6 +22,26 @@ class UserGateway {
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
+    // TODO: Remove after testing Docker
+    public function findAll() 
+    {
+        $statement = "
+            SELECT
+                *
+            FROM
+                account;
+        ";
+
+        try {
+            $statement = $this->db->prepare($statement);
+            $statement->execute();
+            $result = $statement->fetchAll(\PDO::FETCH_ASSOC);
+            return $result;
+        } catch (\PDOException $e) {
+            exit($e->getMessage());
+        }
+    }
+
     public function findUser($id)
     {
         $statement = "
