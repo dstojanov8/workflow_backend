@@ -4,12 +4,14 @@ services:
     build:
       # if docker related files were in root directory
       # context: .
-      context: ./docker
+      # context: ./docker
+      context: ./
       dockerfile: Dockerfile
     volumes:
       # if docker related files were in root directory
       # - .:/var/www/html
       - ../:/var/www/html
+    env_file: ../.env
     networks:
       - app-network
 
@@ -24,6 +26,7 @@ services:
       MYSQL_PASSWORD: mypassword
     volumes:
       - db_data:/var/lib/mysql
+      - ../db_ini.sql:/docker-entrypoint-initdb.d/db_ini.sql # Add this line
     networks:
       - app-network
 
@@ -48,7 +51,8 @@ services:
   #   build:
   #     # if docker related files were in root directory
   #     # context: .
-  #     context: ./docker
+  #     # context: ./docker
+  #      context: ./
   #     dockerfile: Dockerfile
   #   ports:
   #     - "8080:80"
